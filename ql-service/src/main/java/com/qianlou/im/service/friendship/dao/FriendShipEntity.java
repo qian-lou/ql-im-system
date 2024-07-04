@@ -3,12 +3,14 @@ package com.qianlou.im.service.friendship.dao;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.github.jeffreyning.mybatisplus.anno.AutoMap;
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 
 @Data
-@TableName("t_im_friendship")
+@TableName("t_friendship")
 @AutoMap
+@ApiModel(value = "朋友关系实体", description = "朋友关系实体")
 public class FriendShipEntity {
 
     @TableField(value = "app_id")

@@ -8,7 +8,7 @@ import lombok.Data;
  * @description 用户实体类
  **/
 @Data
-@TableName("t_im_user")
+@TableName("t_user")
 public class UserEntity {
 
     // 用户id
@@ -26,13 +26,13 @@ public class UserEntity {
     private String password;
 
     // 头像
-    private String photo;
+    private String img;
 
     // 性别
     private Integer gender;
 
     // 个性签名
-    private String selfSignature;
+    private String signature;
 
     // 加好友验证类型（Friend_AllowType） 1需要验证
     private Integer friendAllowType;

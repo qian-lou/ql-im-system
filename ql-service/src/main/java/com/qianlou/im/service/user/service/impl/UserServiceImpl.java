@@ -1,7 +1,9 @@
 package com.qianlou.im.service.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.qianlou.im.common.constant.ImConstant;
 import com.qianlou.im.common.enums.DelFlagEnum;
+import com.qianlou.im.common.enums.FriendAllowTypeEnum;
 import com.qianlou.im.common.enums.UserErrorCode;
 import com.qianlou.im.common.execption.ApplicationException;
 import com.qianlou.im.common.vo.ResponseVO;
@@ -17,9 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -30,29 +30,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseVO importUser(ImportUserReq req) {
-
-        if(req.getUserList().size() > 100){
+        if (req.getUserList().size() > ImConstant.USER_IMPORT_NUM_MIN) {
             return ResponseVO.errorResponse(UserErrorCode.IMPORT_SIZE_BEYOND);
         }
-
         ImportUserResp resp = new ImportUserResp();
         List<String> successId = new ArrayList<>();
         List<String> errorId = new ArrayList<>();
-
-        for (UserEntity data:
-                req.getUserList()) {
+        for (UserEntity data : req.getUserList()) {
             try {
                 data.setAppId(req.getAppId());
+                data.setFriendAllowType(FriendAllowTypeEnum.NEED.getCode());
+                data.setDelFlag(DelFlagEnum.NORMAL.getCode());
                 int insert = userMapper.insert(data);
-                if(insert == 1){
+                if (insert == 1) {
                     successId.add(data.getUserId());
                 }
-            }catch (Exception e){
-                e.printStackTrace();
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
                 errorId.add(data.getUserId());
             }
         }
-
         resp.setFailIds(errorId);
         resp.setSuccessIds(successId);
         return ResponseVO.successResponse(resp);
@@ -60,27 +57,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseVO<GetUserInfoResp> getUserInfo(GetUserInfoReq req) {
-        QueryWrapper<UserEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id",req.getAppId());
-        queryWrapper.in("user_id",req.getUserIds());
+        QueryWrapper queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("app_id", req.getAppId());
+        queryWrapper.in("user_id", req.getUserIds());
         queryWrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
-
         List<UserEntity> userDataEntities = userMapper.selectList(queryWrapper);
         HashMap<String, UserEntity> map = new HashMap<>();
-
-        for (UserEntity data:
-                userDataEntities) {
-            map.put(data.getUserId(),data);
+        for (UserEntity data : userDataEntities) {
+            map.put(data.getUserId(), data);
         }
-
         List<String> failUser = new ArrayList<>();
-        for (String uid:
-                req.getUserIds()) {
-            if(!map.containsKey(uid)){
+        for (String uid : req.getUserIds()) {
+            if (!map.containsKey(uid)) {
                 failUser.add(uid);
             }
         }
-
         GetUserInfoResp resp = new GetUserInfoResp();
         resp.setUserDataItem(userDataEntities);
         resp.setFailUser(failUser);
@@ -90,48 +81,43 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseVO<UserEntity> getSingleUserInfo(String userId, Integer appId) {
         QueryWrapper objectQueryWrapper = new QueryWrapper<>();
-        objectQueryWrapper.eq("app_id",appId);
-        objectQueryWrapper.eq("user_id",userId);
+        objectQueryWrapper.eq("app_id", appId);
+        objectQueryWrapper.eq("user_id", userId);
         objectQueryWrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
-
         UserEntity userEntity = userMapper.selectOne(objectQueryWrapper);
-        if(userEntity == null){
+        if (userEntity == null) {
             return ResponseVO.errorResponse(UserErrorCode.USER_IS_NOT_EXIST);
         }
         return ResponseVO.successResponse(userEntity);
     }
 
+
     @Override
     public ResponseVO deleteUser(DeleteUserReq req) {
         UserEntity entity = new UserEntity();
         entity.setDelFlag(DelFlagEnum.DELETE.getCode());
-
-        List<String> errorId = new ArrayList();
-        List<String> successId = new ArrayList();
-
-        for (String userId:
-                req.getUserId()) {
+        List<String> failId = new ArrayList<>();
+        List<String> successId = new ArrayList<>();
+        for (String userId : req.getUserId()) {
             QueryWrapper wrapper = new QueryWrapper();
-            wrapper.eq("app_id",req.getAppId());
-            wrapper.eq("user_id",userId);
-            wrapper.eq("del_flag",DelFlagEnum.NORMAL.getCode());
-            int update = 0;
-
+            wrapper.eq("app_id", req.getAppId());
+            wrapper.eq("user_id", userId);
+            wrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
             try {
-                update =  userMapper.update(entity, wrapper);
-                if(update > 0){
+                int update = userMapper.update(entity, wrapper);
+                if (update > 1) {
                     successId.add(userId);
-                }else{
-                    errorId.add(userId);
+                } else {
+                    failId.add(userId);
                 }
-            }catch (Exception e){
-                errorId.add(userId);
+            } catch (Exception e) {
+                failId.add(userId);
             }
         }
 
         ImportUserResp resp = new ImportUserResp();
         resp.setSuccessIds(successId);
-        resp.setFailIds(errorId);
+        resp.setFailIds(failId);
         return ResponseVO.successResponse(resp);
     }
 
@@ -139,16 +125,16 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public ResponseVO modifyUserInfo(ModifyUserInfoReq req) {
         QueryWrapper query = new QueryWrapper<>();
-        query.eq("app_id",req.getAppId());
-        query.eq("user_id",req.getUserId());
-        query.eq("del_flag",DelFlagEnum.NORMAL.getCode());
+        query.eq("app_id", req.getAppId());
+        query.eq("user_id", req.getUserId());
+        query.eq("del_flag", DelFlagEnum.NORMAL.getCode());
         UserEntity user = userMapper.selectOne(query);
-        if(user == null){
+        if (user == null) {
             throw new ApplicationException(UserErrorCode.USER_IS_NOT_EXIST);
         }
 
         UserEntity update = new UserEntity();
-        BeanUtils.copyProperties(req,update);
+        BeanUtils.copyProperties(req, update);
 
         update.setAppId(null);
         update.setUserId(null);

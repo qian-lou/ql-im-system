@@ -1,21 +1,20 @@
 package com.qianlou.im.service.friendship.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.qianlou.im.common.constant.ImConstant;
+import com.qianlou.im.common.enums.CheckFriendShipTypeEnum;
 import com.qianlou.im.common.enums.FriendShipErrorCode;
 import com.qianlou.im.common.enums.FriendShipStatusEnum;
 import com.qianlou.im.common.vo.ResponseVO;
 import com.qianlou.im.service.friendship.dao.FriendShipEntity;
 import com.qianlou.im.service.friendship.dao.mapper.FriendshipMapper;
-import com.qianlou.im.service.friendship.model.req.AddFriendReq;
-import com.qianlou.im.service.friendship.model.req.FriendDto;
-import com.qianlou.im.service.friendship.model.req.ImportFriendShipReq;
-import com.qianlou.im.service.friendship.model.req.UpdateFriendReq;
+import com.qianlou.im.service.friendship.model.req.*;
 import com.qianlou.im.service.friendship.model.resp.ImportFriendShipResp;
 import com.qianlou.im.service.friendship.service.FriendService;
 import com.qianlou.im.service.user.dao.UserEntity;
 import com.qianlou.im.service.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("all")
 @Slf4j
 @Service
 public class FriendServiceImpl implements FriendService {
@@ -36,12 +36,12 @@ public class FriendServiceImpl implements FriendService {
 
     @Override
     public ResponseVO importFriendShip(ImportFriendShipReq req) {
-        if (req.getFriendItem().size() > 100) {
+        if (req.getFriendList().size() > ImConstant.FRIENDSHIP_IMPORT_NUM_MAX) {
             return ResponseVO.errorResponse(FriendShipErrorCode.IMPORT_SIZE_BEYOND);
         }
         List<String> successIds = new ArrayList<>();
         List<String> failIds = new ArrayList<>();
-        List<ImportFriendShipReq.ImportFriendDto> friendItem = req.getFriendItem();
+        List<ImportFriendShipReq.ImportFriendDto> friendItem = req.getFriendList();
         for (ImportFriendShipReq.ImportFriendDto friendDto : friendItem) {
             FriendShipEntity friendShipEntity = new FriendShipEntity();
             BeanUtils.copyProperties(friendDto, friendShipEntity);
@@ -86,11 +86,86 @@ public class FriendServiceImpl implements FriendService {
         if (!toInfo.isOk()) {
             return toInfo;
         }
+        return doUpdateFriend(req.getFromId(), req.getToItem(), req.getAppId());
+    }
+
+    @Override
+    public ResponseVO deleteFriend(DeleteFriendReq req) {
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("from_id", req.getFromId());
+        queryWrapper.eq("to_id", req.getToId());
+        queryWrapper.eq("app_id", req.getAppId());
+        FriendShipEntity friendShipEntity = friendshipMapper.selectOne(queryWrapper);
+        if (friendShipEntity == null) {
+            //不是好友
+            return ResponseVO.errorResponse(FriendShipErrorCode.TO_IS_NOT_YOUR_FRIEND);
+        }
+        if (FriendShipStatusEnum.FRIEND_STATUS_DELETE.getCode() == friendShipEntity.getStatus()) {
+            //该好友已经删除
+            return ResponseVO.errorResponse(FriendShipErrorCode.FRIEND_IS_DELETED);
+        }
+        if (FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode() == friendShipEntity.getStatus()) {
+            //是好友，可删除
+            FriendShipEntity update = new FriendShipEntity();
+            update.setStatus(FriendShipStatusEnum.FRIEND_STATUS_DELETE.getCode());
+            friendshipMapper.update(update, queryWrapper);
+            return ResponseVO.successResponse();
+        }
+        //TODO 其他状态
+        return ResponseVO.successResponse();
+    }
+
+    @Override
+    public ResponseVO deleteAllFriend(DeleteFriendReq req) {
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("app_id", req.getAppId());
+        queryWrapper.eq("from_id", req.getFromId());
+        queryWrapper.eq("status", FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
+        FriendShipEntity update = new FriendShipEntity();
+        update.setStatus(FriendShipStatusEnum.FRIEND_STATUS_DELETE.getCode());
+        friendshipMapper.update(update, queryWrapper);
+        return ResponseVO.successResponse();
+    }
+
+    @Override
+    public ResponseVO getFriend(GetFriendReq req) {
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("app_id", req.getAppId());
+        queryWrapper.eq("from_id", req.getFromId());
+        queryWrapper.eq("to_id", req.getToId());
+        FriendShipEntity friendShipEntity = friendshipMapper.selectOne(queryWrapper);
+        if (friendShipEntity == null) {
+            return ResponseVO.errorResponse(FriendShipErrorCode.FRIENDSHIP_IS_NOT_EXIST);
+        }
+        return ResponseVO.successResponse(friendShipEntity);
+    }
+
+    @Override
+    public ResponseVO getAllFriend(GetAllFriendShipReq req) {
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("app_id", req.getAppId());
+        queryWrapper.eq("from_id", req.getFromId());
+        return ResponseVO.successResponse(friendshipMapper.selectList(queryWrapper));
+    }
+
+    @Override
+    public ResponseVO checkFriendship(CheckFriendShipReq req) {
+        if (CheckFriendShipTypeEnum.SINGLE.getType() == req.getCheckType()) {
+            return ResponseVO.successResponse(friendshipMapper.checkFriendShip(req));
+        }
         return null;
     }
 
     public ResponseVO doUpdateFriend(String fromId, FriendDto dto, Integer appId) {
-        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        UpdateWrapper<FriendShipEntity> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.lambda()
+                .set(FriendShipEntity::getAddSource, dto.getAddSource())
+                .set(FriendShipEntity::getRemark, dto.getRemark())
+                .set(FriendShipEntity::getExtra, dto.getExtra())
+                .eq(FriendShipEntity::getFromId, fromId)
+                .eq(FriendShipEntity::getToId, dto.getToId())
+                .eq(FriendShipEntity::getAppId, appId);
+        friendshipMapper.update(null, updateWrapper);
         return ResponseVO.successResponse();
     }
 
@@ -109,33 +184,20 @@ public class FriendServiceImpl implements FriendService {
             BeanUtils.copyProperties(dto, fromEntity);
             fromEntity.setAppId(appId);
             fromEntity.setFromId(fromId);
-            //默认添加状态
             fromEntity.setStatus(FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
             fromEntity.setCreateTime(System.currentTimeMillis());
             int insert = friendshipMapper.insert(fromEntity);
-            if (insert != 1) {
-                return ResponseVO.errorResponse(FriendShipErrorCode.ADD_FRIEND_ERROR);
-            }
-        } else {
-            if (FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode() == fromEntity.getStatus()) {
-                return ResponseVO.errorResponse(FriendShipErrorCode.TO_IS_YOUR_FRIEND);
-            }
-            FriendShipEntity update = new FriendShipEntity();
-            if (StringUtils.isNotBlank(dto.getAddSource())) {
-                update.setAddSource(dto.getAddSource());
-            }
-            if(StringUtils.isNotBlank(dto.getRemark())){
-                update.setRemark(dto.getRemark());
-            }
-            if(StringUtils.isNotBlank(dto.getExtra())){
-                update.setExtra(dto.getExtra());
-            }
-            update.setStatus(FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
-            int updated = friendshipMapper.update(update, queryWrapper);
-            if (updated != 1) {
-                return ResponseVO.errorResponse(FriendShipErrorCode.ADD_FRIEND_ERROR);
-            }
+            return insert == 1 ? ResponseVO.successResponse() : ResponseVO.errorResponse(FriendShipErrorCode.ADD_FRIEND_ERROR);
         }
-        return ResponseVO.successResponse();
+        if (FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode() == fromEntity.getStatus()) {
+            return ResponseVO.errorResponse(FriendShipErrorCode.TO_IS_YOUR_FRIEND);
+        }
+        FriendShipEntity update = new FriendShipEntity();
+        update.setAddSource(dto.getAddSource());
+        update.setRemark(dto.getRemark());
+        update.setExtra(dto.getExtra());
+        update.setStatus(FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
+        int updated = friendshipMapper.update(update, queryWrapper);
+        return updated == 1 ? ResponseVO.successResponse() : ResponseVO.errorResponse(FriendShipErrorCode.ADD_FRIEND_ERROR);
     }
 }

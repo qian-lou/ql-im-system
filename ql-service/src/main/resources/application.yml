@@ -114,3 +114,13 @@ httpclient:
   connectionRequestTimeout: 2000
   socketTimeout: 5000
   staleConnectionCheckEnabled: true
+
+---
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+---
+swagger:
+  scan-packages: com.qianlou.im.service.friendship.controller,com.qianlou.im.service.user.controller

@@ -1,6 +1,6 @@
 package com.qianlou.im.common.enums;
 
-public enum AllowFriendTypeEnum {
+public enum FriendAllowTypeEnum {
 
     /**
      * 验证
@@ -15,9 +15,9 @@ public enum AllowFriendTypeEnum {
     ;
 
 
-    private int code;
+    private final int code;
 
-    AllowFriendTypeEnum(int code){
+    FriendAllowTypeEnum(int code){
         this.code=code;
     }
 

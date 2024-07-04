@@ -2,10 +2,12 @@ package com.qianlou.im.service.user.model.req;
 
 import com.qianlou.im.common.model.RequestBase;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import javax.validation.constraints.NotEmpty;
 
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ModifyUserInfoReq extends RequestBase {
 
@@ -25,13 +27,13 @@ public class ModifyUserInfoReq extends RequestBase {
     private String password;
 
     // 头像
-    private String photo;
+    private String img;
 
     // 性别
-    private String userSex;
+    private String gender;
 
     // 个性签名
-    private String selfSignature;
+    private String signature;
 
     // 加好友验证类型（Friend_AllowType） 1需要验证
     private Integer friendAllowType;

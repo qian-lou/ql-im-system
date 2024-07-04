@@ -6,8 +6,8 @@ package com.qianlou.im.common.execption;
  */
 public class ApplicationException extends RuntimeException {
 
-    private int code;
-    private String error;
+    private final int code;
+    private final String error;
 
     public ApplicationException(int code, String message) {
         super(message);

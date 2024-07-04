@@ -7,7 +7,7 @@ import javax.validation.constraints.NotBlank;
 
 
 @Data
-public class GetRelationReq extends RequestBase {
+public class GetFriendReq extends RequestBase {
     @NotBlank(message = "fromId不能为空")
     private String fromId;
 
