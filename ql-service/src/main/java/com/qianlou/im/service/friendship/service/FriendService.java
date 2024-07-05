@@ -52,4 +52,22 @@ public interface FriendService {
      * @param req
      */
     ResponseVO checkFriendship(CheckFriendShipReq req);
+
+    /**
+     * 添加黑名单
+     * @param req
+     */
+    ResponseVO addBlack(AddFriendShipBlackReq req);
+
+    /**
+     * 删除黑名单
+     * @param req
+     */
+    ResponseVO deleteBlack(DeleteBlackReq req);
+
+    /**
+     * 校验黑名单
+     * @param req
+     */
+    ResponseVO checkBlack(CheckFriendShipReq req);
 }

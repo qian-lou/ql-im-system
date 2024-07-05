@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.qianlou.im.common.constant.ImConstant;
 import com.qianlou.im.common.enums.CheckFriendShipTypeEnum;
+import com.qianlou.im.common.enums.FriendAllowTypeEnum;
 import com.qianlou.im.common.enums.FriendShipErrorCode;
 import com.qianlou.im.common.enums.FriendShipStatusEnum;
 import com.qianlou.im.common.vo.ResponseVO;
 import com.qianlou.im.service.friendship.dao.FriendShipEntity;
 import com.qianlou.im.service.friendship.dao.mapper.FriendshipMapper;
 import com.qianlou.im.service.friendship.model.req.*;
+import com.qianlou.im.service.friendship.model.resp.CheckFriendShipResp;
 import com.qianlou.im.service.friendship.model.resp.ImportFriendShipResp;
 import com.qianlou.im.service.friendship.service.FriendService;
 import com.qianlou.im.service.user.dao.UserEntity;
@@ -22,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("all")
 @Slf4j
@@ -73,7 +78,12 @@ public class FriendServiceImpl implements FriendService {
         if (!toInfo.isOk()) {
             return toInfo;
         }
-        return doAddFriend(req.getFromId(), req.getToItem(), req.getAppId());
+        UserEntity toUserEntity = toInfo.getData();
+        if (toUserEntity.getFriendAllowType() != null && toUserEntity.getFriendAllowType() == FriendAllowTypeEnum.NOT_NEED.getCode()) {
+            return doAddFriend(req.getFromId(), req.getToItem(), req.getAppId());
+        }
+        //TODO 需要好友验证
+        return ResponseVO.successResponse();
     }
 
     @Override
@@ -92,9 +102,9 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public ResponseVO deleteFriend(DeleteFriendReq req) {
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("from_id", req.getFromId());
-        queryWrapper.eq("to_id", req.getToId());
-        queryWrapper.eq("app_id", req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
+        queryWrapper.eq(ImConstant.TO_ID_NAME, req.getToId());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
         FriendShipEntity friendShipEntity = friendshipMapper.selectOne(queryWrapper);
         if (friendShipEntity == null) {
             //不是好友
@@ -118,8 +128,8 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public ResponseVO deleteAllFriend(DeleteFriendReq req) {
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id", req.getAppId());
-        queryWrapper.eq("from_id", req.getFromId());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
         queryWrapper.eq("status", FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
         FriendShipEntity update = new FriendShipEntity();
         update.setStatus(FriendShipStatusEnum.FRIEND_STATUS_DELETE.getCode());
@@ -130,9 +140,9 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public ResponseVO getFriend(GetFriendReq req) {
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id", req.getAppId());
-        queryWrapper.eq("from_id", req.getFromId());
-        queryWrapper.eq("to_id", req.getToId());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
+        queryWrapper.eq(ImConstant.TO_ID_NAME, req.getToId());
         FriendShipEntity friendShipEntity = friendshipMapper.selectOne(queryWrapper);
         if (friendShipEntity == null) {
             return ResponseVO.errorResponse(FriendShipErrorCode.FRIENDSHIP_IS_NOT_EXIST);
@@ -143,17 +153,115 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public ResponseVO getAllFriend(GetAllFriendShipReq req) {
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id", req.getAppId());
-        queryWrapper.eq("from_id", req.getFromId());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
         return ResponseVO.successResponse(friendshipMapper.selectList(queryWrapper));
     }
 
     @Override
     public ResponseVO checkFriendship(CheckFriendShipReq req) {
+        List<CheckFriendShipResp> resps = new ArrayList<>();
         if (CheckFriendShipTypeEnum.SINGLE.getType() == req.getCheckType()) {
-            return ResponseVO.successResponse(friendshipMapper.checkFriendShip(req));
+            resps = friendshipMapper.checkFriendShip(req);
         }
-        return null;
+        if (CheckFriendShipTypeEnum.BOTH.getType() == req.getCheckType()) {
+            resps = friendshipMapper.checkFriendShipBoth(req);
+        }
+        Map<String, Integer> toReqMap = req.getToIds().stream().collect(Collectors.toMap(Function.identity(), s -> 0));
+        Map<String, Integer> toIdFromDbMap = resps.stream().collect(Collectors.toMap(CheckFriendShipResp::getToId, CheckFriendShipResp::getStatus));
+        for (Map.Entry<String, Integer> entry : toReqMap.entrySet()) {
+            String toId = entry.getKey();
+            Integer status = entry.getValue();
+            if (!toIdFromDbMap.containsKey(toId)) {
+                CheckFriendShipResp resp = new CheckFriendShipResp();
+                resp.setFromId(req.getFromId());
+                resp.setToId(toId);
+                resp.setStatus(status);
+                resps.add(resp);
+            }
+        }
+        return ResponseVO.successResponse(resps);
+    }
+
+    @Override
+    public ResponseVO addBlack(AddFriendShipBlackReq req) {
+        ResponseVO<UserEntity> fromInfo = userService.getSingleUserInfo(req.getFromId(), req.getAppId());
+        if (!fromInfo.isOk()) {
+            return fromInfo;
+        }
+        ResponseVO<UserEntity> toInfo = userService.getSingleUserInfo(req.getToId(), req.getAppId());
+        if (!toInfo.isOk()) {
+            return toInfo;
+        }
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
+        queryWrapper.eq(ImConstant.TO_ID_NAME, req.getToId());
+        FriendShipEntity fse = friendshipMapper.selectOne(queryWrapper);
+        //不存在关系链
+        if (fse == null) {
+            fse = new FriendShipEntity();
+            fse.setFromId(req.getFromId());
+            fse.setToId(req.getToId());
+            fse.setAppId(req.getAppId());
+            fse.setBlack(FriendShipStatusEnum.BLACK_STATUS_BLACKED.getCode());
+            fse.setCreateTime(System.currentTimeMillis());
+            int insert = friendshipMapper.insert(fse);
+            return insert != 1 ? ResponseVO.errorResponse(FriendShipErrorCode.ADD_BLACK_ERROR) : ResponseVO.successResponse();
+        }
+        //已经拉黑
+        if (fse.getBlack() != null && FriendShipStatusEnum.BLACK_STATUS_BLACKED.getCode() == fse.getBlack()) {
+            return ResponseVO.errorResponse(FriendShipErrorCode.FRIEND_IS_BLACK);
+        }
+        //没拉黑
+        FriendShipEntity updateEntity = new FriendShipEntity();
+        updateEntity.setBlack(FriendShipStatusEnum.BLACK_STATUS_BLACKED.getCode());
+        int update = friendshipMapper.update(updateEntity, queryWrapper);
+        return update != 1 ? ResponseVO.errorResponse(FriendShipErrorCode.ADD_BLACK_ERROR) : ResponseVO.successResponse();
+    }
+
+    @Override
+    public ResponseVO deleteBlack(DeleteBlackReq req) {
+        QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, req.getFromId());
+        queryWrapper.eq(ImConstant.TO_ID_NAME, req.getToId());
+        FriendShipEntity shipEntity = friendshipMapper.selectOne(queryWrapper);
+        if (shipEntity == null) {
+            return ResponseVO.errorResponse(FriendShipErrorCode.FRIENDSHIP_IS_NOT_EXIST);
+        }
+        if (shipEntity.getBlack() != null && FriendShipStatusEnum.BLACK_STATUS_NORMAL.getCode() == shipEntity.getBlack()) {
+            return ResponseVO.errorResponse(FriendShipErrorCode.FRIEND_IS_NOT_YOUR_BLACK);
+        }
+        FriendShipEntity updateEntity = new FriendShipEntity();
+        updateEntity.setBlack(FriendShipStatusEnum.BLACK_STATUS_NORMAL.getCode());
+        int update = friendshipMapper.update(updateEntity, queryWrapper);
+        return update != 1 ? ResponseVO.errorResponse(FriendShipErrorCode.DELETE_BLACK_ERROR) : ResponseVO.successResponse();
+    }
+
+    @Override
+    public ResponseVO checkBlack(CheckFriendShipReq req) {
+        List<CheckFriendShipResp> resps = new ArrayList<>();
+        if (CheckFriendShipTypeEnum.SINGLE.getType() == req.getCheckType()) {
+            resps = friendshipMapper.checkBlack(req);
+        }
+        if (CheckFriendShipTypeEnum.BOTH.getType() == req.getCheckType()) {
+            resps = friendshipMapper.checkBlackBoth(req);
+        }
+        Map<String, Integer> toReqMap = req.getToIds().stream().collect(Collectors.toMap(Function.identity(), s -> 0));
+        Map<String, Integer> toIdFromDbMap = resps.stream().collect(Collectors.toMap(CheckFriendShipResp::getToId, CheckFriendShipResp::getStatus));
+        for (Map.Entry<String, Integer> entry : toReqMap.entrySet()) {
+            String toId = entry.getKey();
+            Integer status = entry.getValue();
+            if (!toIdFromDbMap.containsKey(toId)) {
+                CheckFriendShipResp resp = new CheckFriendShipResp();
+                resp.setFromId(req.getFromId());
+                resp.setToId(toId);
+                resp.setStatus(status);
+                resps.add(resp);
+            }
+        }
+        return ResponseVO.successResponse(resps);
     }
 
     public ResponseVO doUpdateFriend(String fromId, FriendDto dto, Integer appId) {
@@ -174,9 +282,9 @@ public class FriendServiceImpl implements FriendService {
         //A-B
         //添加A->B 和B->A
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id", appId);
-        queryWrapper.eq("from_id", fromId);
-        queryWrapper.eq("to_id", dto.getToId());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, appId);
+        queryWrapper.eq(ImConstant.FROM_ID_NAME, fromId);
+        queryWrapper.eq(ImConstant.TO_ID_NAME, dto.getToId());
 
         FriendShipEntity fromEntity = friendshipMapper.selectOne(queryWrapper);
         if (fromEntity == null) {

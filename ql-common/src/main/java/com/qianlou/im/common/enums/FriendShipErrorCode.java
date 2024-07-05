@@ -2,11 +2,13 @@ package com.qianlou.im.common.enums;
 
 
 import com.qianlou.im.common.execption.ApplicationExceptionEnum;
+import lombok.Getter;
 
+@Getter
 public enum FriendShipErrorCode implements ApplicationExceptionEnum {
 
 
-    IMPORT_SIZE_BEYOND(30000,"导入數量超出上限"),
+    IMPORT_SIZE_BEYOND(30000,"导入数量超出上限"),
 
     ADD_FRIEND_ERROR(30001,"添加好友失败"),
 
@@ -22,9 +24,10 @@ public enum FriendShipErrorCode implements ApplicationExceptionEnum {
 
     FRIENDSHIP_IS_NOT_EXIST(30008,"好友关系记录不存在"),
 
-    ADD_BLACK_ERROR(30009,"添加黑名單失败"),
+    ADD_BLACK_ERROR(30009,"添加黑名单失败"),
+    DELETE_BLACK_ERROR(30009,"删除黑名单失败"),
 
-    FRIEND_IS_NOT_YOUR_BLACK(30010,"好友已經不在你的黑名單内"),
+    FRIEND_IS_NOT_YOUR_BLACK(30010,"好友已经不在你的黑名单内"),
 
     NOT_APPROVER_OTHER_MAN_REQUEST(30011,"无法审批其他人的好友请求"),
 
@@ -36,23 +39,14 @@ public enum FriendShipErrorCode implements ApplicationExceptionEnum {
 
     FRIEND_SHIP_GROUP_IS_NOT_EXIST(30016,"好友分组不存在"),
 
-
-
     ;
 
-    private int code;
-    private String error;
+    private final int code;
+    private final String error;
 
     FriendShipErrorCode(int code, String error){
         this.code = code;
         this.error = error;
-    }
-    public int getCode() {
-        return this.code;
-    }
-
-    public String getError() {
-        return this.error;
     }
 
 }

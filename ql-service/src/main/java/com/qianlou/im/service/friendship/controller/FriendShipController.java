@@ -55,7 +55,22 @@ public class FriendShipController {
     }
 
     @PostMapping("/checkFriendship")
-    public ResponseVO getAllFriend(@RequestBody @Validated CheckFriendShipReq req) {
+    public ResponseVO checkFriendship(@RequestBody @Validated CheckFriendShipReq req) {
         return friendService.checkFriendship(req);
+    }
+
+    @PostMapping("/addBlack")
+    public ResponseVO addBlack(@RequestBody @Validated AddFriendShipBlackReq req) {
+        return friendService.addBlack(req);
+    }
+
+    @PostMapping("/deleteBlack")
+    public ResponseVO deleteBlack(@RequestBody @Validated DeleteBlackReq req) {
+        return friendService.deleteBlack(req);
+    }
+
+    @PostMapping("/checkBlack")
+    public ResponseVO checkBlack(@RequestBody @Validated CheckFriendShipReq req) {
+        return friendService.checkBlack(req);
     }
 }

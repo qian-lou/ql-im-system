@@ -58,9 +58,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseVO<GetUserInfoResp> getUserInfo(GetUserInfoReq req) {
         QueryWrapper queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("app_id", req.getAppId());
-        queryWrapper.in("user_id", req.getUserIds());
-        queryWrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
+        queryWrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        queryWrapper.in(ImConstant.USER_ID_NAME, req.getUserIds());
+        queryWrapper.eq(ImConstant.DELETE_FLAG_NAME, DelFlagEnum.NORMAL.getCode());
         List<UserEntity> userDataEntities = userMapper.selectList(queryWrapper);
         HashMap<String, UserEntity> map = new HashMap<>();
         for (UserEntity data : userDataEntities) {
@@ -81,9 +81,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseVO<UserEntity> getSingleUserInfo(String userId, Integer appId) {
         QueryWrapper objectQueryWrapper = new QueryWrapper<>();
-        objectQueryWrapper.eq("app_id", appId);
-        objectQueryWrapper.eq("user_id", userId);
-        objectQueryWrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
+        objectQueryWrapper.eq(ImConstant.APP_ID_NAME, appId);
+        objectQueryWrapper.eq(ImConstant.USER_ID_NAME, userId);
+        objectQueryWrapper.eq(ImConstant.DELETE_FLAG_NAME, DelFlagEnum.NORMAL.getCode());
         UserEntity userEntity = userMapper.selectOne(objectQueryWrapper);
         if (userEntity == null) {
             return ResponseVO.errorResponse(UserErrorCode.USER_IS_NOT_EXIST);
@@ -100,9 +100,9 @@ public class UserServiceImpl implements UserService {
         List<String> successId = new ArrayList<>();
         for (String userId : req.getUserId()) {
             QueryWrapper wrapper = new QueryWrapper();
-            wrapper.eq("app_id", req.getAppId());
-            wrapper.eq("user_id", userId);
-            wrapper.eq("del_flag", DelFlagEnum.NORMAL.getCode());
+            wrapper.eq(ImConstant.APP_ID_NAME, req.getAppId());
+            wrapper.eq(ImConstant.USER_ID_NAME, userId);
+            wrapper.eq(ImConstant.DELETE_FLAG_NAME, DelFlagEnum.NORMAL.getCode());
             try {
                 int update = userMapper.update(entity, wrapper);
                 if (update > 1) {
@@ -125,9 +125,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public ResponseVO modifyUserInfo(ModifyUserInfoReq req) {
         QueryWrapper query = new QueryWrapper<>();
-        query.eq("app_id", req.getAppId());
-        query.eq("user_id", req.getUserId());
-        query.eq("del_flag", DelFlagEnum.NORMAL.getCode());
+        query.eq(ImConstant.APP_ID_NAME, req.getAppId());
+        query.eq(ImConstant.USER_ID_NAME, req.getUserId());
+        query.eq(ImConstant.DELETE_FLAG_NAME, DelFlagEnum.NORMAL.getCode());
         UserEntity user = userMapper.selectOne(query);
         if (user == null) {
             throw new ApplicationException(UserErrorCode.USER_IS_NOT_EXIST);
