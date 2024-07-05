@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 @Mapper
-public interface FriendshipMapper extends BaseMapper<FriendShipEntity> {
+public interface FriendShipMapper extends BaseMapper<FriendShipEntity> {
 
     /**
      * 单向检查好友关系

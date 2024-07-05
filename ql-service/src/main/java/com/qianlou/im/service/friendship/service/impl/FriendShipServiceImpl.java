@@ -9,11 +9,12 @@ import com.qianlou.im.common.enums.FriendShipErrorCode;
 import com.qianlou.im.common.enums.FriendShipStatusEnum;
 import com.qianlou.im.common.vo.ResponseVO;
 import com.qianlou.im.service.friendship.dao.FriendShipEntity;
-import com.qianlou.im.service.friendship.dao.mapper.FriendshipMapper;
+import com.qianlou.im.service.friendship.dao.mapper.FriendShipMapper;
 import com.qianlou.im.service.friendship.model.req.*;
 import com.qianlou.im.service.friendship.model.resp.CheckFriendShipResp;
 import com.qianlou.im.service.friendship.model.resp.ImportFriendShipResp;
-import com.qianlou.im.service.friendship.service.FriendService;
+import com.qianlou.im.service.friendship.service.FriendShipRequestService;
+import com.qianlou.im.service.friendship.service.FriendShipService;
 import com.qianlou.im.service.user.dao.UserEntity;
 import com.qianlou.im.service.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +32,16 @@ import java.util.stream.Collectors;
 @SuppressWarnings("all")
 @Slf4j
 @Service
-public class FriendServiceImpl implements FriendService {
+public class FriendShipServiceImpl implements FriendShipService {
 
     @Autowired
-    private FriendshipMapper friendshipMapper;
+    private FriendShipMapper friendshipMapper;
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FriendShipRequestService friendshipRequestService;
 
     @Override
     public ResponseVO importFriendShip(ImportFriendShipReq req) {
@@ -82,8 +86,8 @@ public class FriendServiceImpl implements FriendService {
         if (toUserEntity.getFriendAllowType() != null && toUserEntity.getFriendAllowType() == FriendAllowTypeEnum.NOT_NEED.getCode()) {
             return doAddFriend(req.getFromId(), req.getToItem(), req.getAppId());
         }
-        //TODO 需要好友验证
-        return ResponseVO.successResponse();
+        ResponseVO added = friendshipRequestService.addFriendShipRequest(req.getFromId(), req.getToItem(), req.getAppId());
+        return added.isOk() ? ResponseVO.successResponse() : added;
     }
 
     @Override
@@ -281,18 +285,33 @@ public class FriendServiceImpl implements FriendService {
     public ResponseVO doAddFriend(String fromId, FriendDto dto, Integer appId) {
         //A-B
         //添加A->B 和B->A
+        ResponseVO fromVo = doAddFriend(fromId, dto.getToId(), dto, appId);
+        if (!fromVo.isOk()) {
+            return fromVo;
+        }
+        ResponseVO toVo = doAddFriend(dto.getToId(), fromId, dto, appId);
+        if (!toVo.isOk()) {
+            return toVo;
+        }
+        return ResponseVO.successResponse();
+    }
+
+    private ResponseVO doAddFriend(String fromId, String toId, FriendDto dto, Integer appId) {
+        //A-B
         QueryWrapper<FriendShipEntity> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(ImConstant.APP_ID_NAME, appId);
         queryWrapper.eq(ImConstant.FROM_ID_NAME, fromId);
-        queryWrapper.eq(ImConstant.TO_ID_NAME, dto.getToId());
+        queryWrapper.eq(ImConstant.TO_ID_NAME, toId);
 
         FriendShipEntity fromEntity = friendshipMapper.selectOne(queryWrapper);
         if (fromEntity == null) {
             fromEntity = new FriendShipEntity();
-            BeanUtils.copyProperties(dto, fromEntity);
             fromEntity.setAppId(appId);
             fromEntity.setFromId(fromId);
+            fromEntity.setToId(toId);
             fromEntity.setStatus(FriendShipStatusEnum.FRIEND_STATUS_NORMAL.getCode());
+            fromEntity.setRemark(dto.getRemark());
+            fromEntity.setExtra(dto.getExtra());
             fromEntity.setCreateTime(System.currentTimeMillis());
             int insert = friendshipMapper.insert(fromEntity);
             return insert == 1 ? ResponseVO.successResponse() : ResponseVO.errorResponse(FriendShipErrorCode.ADD_FRIEND_ERROR);

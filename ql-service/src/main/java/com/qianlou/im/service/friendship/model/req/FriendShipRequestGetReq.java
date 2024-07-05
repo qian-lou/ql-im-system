@@ -5,10 +5,10 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 
-
 @Data
-public class ReadFriendShipRequestReq extends RequestBase {
+public class FriendShipRequestGetReq extends RequestBase {
 
     @NotBlank(message = "用户id不能为空")
     private String fromId;
+
 }

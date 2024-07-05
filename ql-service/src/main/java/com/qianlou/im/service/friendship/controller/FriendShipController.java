@@ -2,7 +2,7 @@ package com.qianlou.im.service.friendship.controller;
 
 import com.qianlou.im.common.vo.ResponseVO;
 import com.qianlou.im.service.friendship.model.req.*;
-import com.qianlou.im.service.friendship.service.FriendService;
+import com.qianlou.im.service.friendship.service.FriendShipService;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FriendShipController {
 
     @Autowired
-    private FriendService friendService;
+    private FriendShipService friendService;
 
     @PostMapping("/import")
     public ResponseVO importFriends(@RequestBody ImportFriendShipReq req) {

@@ -1,7 +1,8 @@
 package com.qianlou.im.common.enums;
 
-public enum ApproverFriendRequestStatusEnum {
+public enum FriendShipRequestApproverStatusEnum {
 
+    DEFAULT(0),
     /**
      * 1 同意；2 拒绝。
      */
@@ -10,10 +11,10 @@ public enum ApproverFriendRequestStatusEnum {
     REJECT(2),
     ;
 
-    private int code;
+    private final int code;
 
-    ApproverFriendRequestStatusEnum(int code){
-        this.code=code;
+    FriendShipRequestApproverStatusEnum(int code) {
+        this.code = code;
     }
 
     public int getCode() {

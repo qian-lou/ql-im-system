@@ -124,3 +124,9 @@ spring:
 ---
 swagger:
   scan-packages: com.qianlou.im.service.friendship.controller,com.qianlou.im.service.user.controller
+
+#允许循环依赖
+---
+spring:
+  main:
+    allow-circular-references: true

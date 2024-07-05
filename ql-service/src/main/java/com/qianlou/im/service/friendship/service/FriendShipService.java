@@ -3,7 +3,7 @@ package com.qianlou.im.service.friendship.service;
 import com.qianlou.im.common.vo.ResponseVO;
 import com.qianlou.im.service.friendship.model.req.*;
 
-public interface FriendService {
+public interface FriendShipService {
 
     /**
      * 导入朋友关系
@@ -16,6 +16,8 @@ public interface FriendService {
      * @param req
      */
     ResponseVO addFriend(AddFriendReq req);
+
+    ResponseVO doAddFriend(String fromId, FriendDto dto, Integer appId);
 
     /**
      * 更新好友
