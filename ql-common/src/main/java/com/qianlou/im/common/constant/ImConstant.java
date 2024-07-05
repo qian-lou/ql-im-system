@@ -11,4 +11,6 @@ public class ImConstant {
     public static final String TO_ID_NAME = "to_id";
     public static final String USER_ID_NAME = "user_id";
     public static final String DELETE_FLAG_NAME = "del_flag";
+    public static final String GROUP_NAME = "group_name";
+    public static final String GROUP_ID_NAME = "group_id";
 }

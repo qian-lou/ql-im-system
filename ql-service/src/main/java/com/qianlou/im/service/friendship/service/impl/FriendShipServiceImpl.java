@@ -8,7 +8,7 @@ import com.qianlou.im.common.enums.FriendAllowTypeEnum;
 import com.qianlou.im.common.enums.FriendShipErrorCode;
 import com.qianlou.im.common.enums.FriendShipStatusEnum;
 import com.qianlou.im.common.vo.ResponseVO;
-import com.qianlou.im.service.friendship.dao.FriendShipEntity;
+import com.qianlou.im.service.friendship.dao.entity.FriendShipEntity;
 import com.qianlou.im.service.friendship.dao.mapper.FriendShipMapper;
 import com.qianlou.im.service.friendship.model.req.*;
 import com.qianlou.im.service.friendship.model.resp.CheckFriendShipResp;

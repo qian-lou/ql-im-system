@@ -1,4 +1,4 @@
-package com.qianlou.im.service.friendship.dao;
+package com.qianlou.im.service.friendship.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
