@@ -1,6 +1,6 @@
 package com.qianlou.im.service.user.model.resp;
 
-import com.qianlou.im.service.user.dao.UserEntity;
+import com.qianlou.im.service.user.dao.entity.UserEntity;
 import lombok.Data;
 
 import java.util.List;

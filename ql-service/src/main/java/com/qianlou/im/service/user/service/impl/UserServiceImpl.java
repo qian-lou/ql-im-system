@@ -7,7 +7,7 @@ import com.qianlou.im.common.enums.FriendAllowTypeEnum;
 import com.qianlou.im.common.enums.UserErrorCode;
 import com.qianlou.im.common.execption.ApplicationException;
 import com.qianlou.im.common.vo.ResponseVO;
-import com.qianlou.im.service.user.dao.UserEntity;
+import com.qianlou.im.service.user.dao.entity.UserEntity;
 import com.qianlou.im.service.user.dao.mapper.UserMapper;
 import com.qianlou.im.service.user.model.req.*;
 import com.qianlou.im.service.user.model.resp.GetUserInfoResp;

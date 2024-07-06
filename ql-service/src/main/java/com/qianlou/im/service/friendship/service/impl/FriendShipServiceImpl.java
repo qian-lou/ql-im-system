@@ -15,7 +15,7 @@ import com.qianlou.im.service.friendship.model.resp.CheckFriendShipResp;
 import com.qianlou.im.service.friendship.model.resp.ImportFriendShipResp;
 import com.qianlou.im.service.friendship.service.FriendShipRequestService;
 import com.qianlou.im.service.friendship.service.FriendShipService;
-import com.qianlou.im.service.user.dao.UserEntity;
+import com.qianlou.im.service.user.dao.entity.UserEntity;
 import com.qianlou.im.service.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;

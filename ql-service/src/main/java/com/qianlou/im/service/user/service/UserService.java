@@ -1,11 +1,9 @@
 package com.qianlou.im.service.user.service;
 
 import com.qianlou.im.common.vo.ResponseVO;
-import com.qianlou.im.service.user.dao.UserEntity;
+import com.qianlou.im.service.user.dao.entity.UserEntity;
 import com.qianlou.im.service.user.model.req.*;
 import com.qianlou.im.service.user.model.resp.GetUserInfoResp;
-
-import java.util.List;
 
 public interface UserService {
 

@@ -1,7 +1,7 @@
 package com.qianlou.im.service.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qianlou.im.service.user.dao.UserEntity;
+import com.qianlou.im.service.user.dao.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

@@ -1,4 +1,4 @@
-package com.qianlou.im.service.user.dao;
+package com.qianlou.im.service.user.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
